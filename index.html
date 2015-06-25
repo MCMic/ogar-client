@@ -1,0 +1,26 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Ogar client test</title>
+    <script src="client.js"></script>
+    <style type="text/css">
+      canvas {
+        border: 1px dashed black;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="main">
+      <h3 id="title">Ogar client</h3>
+      <input type="text" value="ws://ogar.bernigaud.eu" id="url" name="url"/>
+      <input type="text" value="ogarclient" id="nickname" name="nickname"/>
+      <input type="button" onclick="javascript:connect();" value="connect"/>
+      <div id="leaderboard">board</div>
+      <br/>
+      <canvas id="canvas" width="800" height="600"></canvas>
+    </div>
+
+    <footer>
+    </footer>
+  </body>
+</html>
