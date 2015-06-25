@@ -1,8 +1,20 @@
 var zoom = 1;
-var nodes = [];
-var myNodes = [];
+var nodes;
+var myNodes;
 var playerx,playery;
-var canvas = document.getElementById("canvas");
+var startx = 2000,starty = 2000;
+var mousex,mousey;
+var canvas;
+
+window.onload = function () {
+  console.log('init');
+  canvas = document.getElementById("canvas");
+  canvas.onmousemove = function(e) {
+    mousex = e.clientX;
+    mousey = e.clientY;
+  };
+  setInterval(tick, 1000);
+}
 
 var Node = function(x, y, radius, name, virus) {
   this.x = x;
@@ -27,6 +39,8 @@ Node.prototype.update = function (x, y, radius) {
 }
 
 function connect() {
+  nodes = [];
+  myNodes = [];
   url = document.getElementById('url').value;
   socket = new WebSocket(url);
   socket.binaryType = 'arraybuffer';
@@ -43,16 +57,14 @@ function connect() {
   }
 
   socket.onmessage = function (event) {
-    console.log('recv message', event);
     var view = new DataView(event.data);
     var packetId = view.getUint8(0, true);
-          console.log('received packetId', packetId);
+    console.log('received packetId', packetId);
 
     switch (packetId) {
       case 16: // Update nodes
-          console.log('recv packetId', 'Update Nodes');
           var nbNodesToDestroy = view.getUint16(1, true);
-            console.log('nbNodesToDestroy', nbNodesToDestroy);
+          console.log('nbNodesToDestroy', nbNodesToDestroy);
           var i = 3;
           for (var j = 0; j < nbNodesToDestroy; ++j) {
             var killerId = view.getUint32(i, true);
@@ -85,7 +97,6 @@ function connect() {
                     break;
                 nodeName += String.fromCharCode(c)
             }
-            console.log('node', nodeId, x,y,radius,nodeName);
             var nodeId = view.getUint32(i, true);
             i+=4;
             if (nodes[nodeId] == null) {
@@ -104,7 +115,6 @@ function connect() {
             i+=4;
             socket.close();
           }
-          drawScreen();
           break;
       case 17: // Update position and size
           socket.close();
@@ -156,59 +166,66 @@ function connect() {
           break;
     }
   };
+}
 
-  function sendPacket(socket, packetId, data)
-  {
-    var size;
-    switch (packetId) {
-      case 0:
-      size = 1 + 2*data.length;
-      break;
-      case 16:
-      size = 21;
-      break;
-      case 254:
-      case 255:
-      size = 5;
-      break;
-    }
-    var buf = new ArrayBuffer(size);
-    var view = new DataView(buf);
-
-    view.setUint8(0, packetId, true);
-    switch (packetId) {
-      case 0:
-        console.log('sending', data);
-        var i = 1
-        for (var j = 0; j < data.length; j++) {
-          var c = data.charCodeAt(j);
-          if (c) {
-            view.setUint16(i, c, true);
-          }
-          i += 2;
-        }
-      break;
-      case 16:
-        console.log('sending', data);
-        view.setFloat64(1, data[0], true);
-        view.setFloat64(9, data[1], true);
-        view.setUint32(17, 0, true);
-      case 254:
-        view.setUint32(1, 4, true);
-      break;
-      case 255:
-        view.setUint32(1, 673720361, true);
-      break;
-    }
-    socket.send(view);
+function sendPacket(socket, packetId, data)
+{
+  var size;
+  switch (packetId) {
+    case 0:
+    size = 1 + 2*data.length;
+    break;
+    case 16:
+    size = 21;
+    break;
+    case 254:
+    case 255:
+    size = 5;
+    break;
   }
+  var buf = new ArrayBuffer(size);
+  var view = new DataView(buf);
+
+  view.setUint8(0, packetId, true);
+  switch (packetId) {
+    case 0:
+      console.log('sending', data);
+      var i = 1
+      for (var j = 0; j < data.length; j++) {
+        var c = data.charCodeAt(j);
+        if (c) {
+          view.setUint16(i, c, true);
+        }
+        i += 2;
+      }
+    break;
+    case 16:
+      console.log('sending', data);
+      view.setFloat64(1, data[0], true);
+      view.setFloat64(9, data[1], true);
+      view.setUint32(17, 0, true);
+    case 254:
+      view.setUint32(1, 4, true);
+    break;
+    case 255:
+      view.setUint32(1, 673720361, true);
+    break;
+  }
+  socket.send(view);
+}
+
+function tick() {
+  drawScreen();
+  sendPacket(socket, 16, [startx+mousex,starty+mousey]);
 }
 
 function drawScreen() {
   var ctx = canvas.getContext("2d");
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  var startx = nodes[myNodes[0]].x - canvas.width/2;
-  var starty = nodes[myNodes[0]].y - canvas.height/2;
+  if (myNodes.length > 0) {
+    startx = nodes[myNodes[0]].x - canvas.width/2;
+    starty = nodes[myNodes[0]].y - canvas.height/2;
+  }
   for (var i in nodes) {
     drawCircle(nodes[i].x-startx, nodes[i].y-starty, nodes[i].radius);
   }
@@ -229,7 +246,6 @@ function drawCircle(x, y, radius) {
 
 function onWindowResize ()
 {
-  canvas = document.getElementById("canvas");
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
 }
