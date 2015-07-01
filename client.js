@@ -12,6 +12,7 @@ var wKey = 87;
 var splitKeyPressed = false;
 var qKeyPressed = false;
 var wKeyPressed = false;
+var b_left,b_top,b_right,b_bottom;
 
 window.onload = function () {
   console.log('init');
@@ -54,6 +55,8 @@ function connect() {
 
   window.onresize = onWindowResize;
   onWindowResize ();
+
+  canvas.focus();
 
   socket.onopen = function (event) {
     sendPacket(socket, 254);
@@ -163,11 +166,11 @@ function connect() {
       case 50: // Update leaderboard team
           break;
       case 64: // Set border
-          var left = view.getFloat64(1, true);
-          var top = view.getFloat64(9, true);
-          var right = view.getFloat64(17, true);
-          var bottom = view.getFloat64(25, true);
-          console.log('setBorder', left,top,right,bottom);
+          b_left = view.getFloat64(1, true);
+          b_top = view.getFloat64(9, true);
+          b_right = view.getFloat64(17, true);
+          b_bottom = view.getFloat64(25, true);
+          console.log('setBorder', b_left,b_top,b_right,b_bottom);
           break;
       default:
           console.log('received unknown packetId', packetId);
@@ -251,6 +254,7 @@ function drawScreen() {
   for (var i in nodes) {
     drawCircle(nodes[i].x-startx, nodes[i].y-starty, nodes[i].radius, nodes[i].name);
   }
+  ctx.strokeRect(b_left-startx,b_top-starty,b_right-b_left,b_bottom-b_top);
 }
 
 function drawCircle(x, y, radius, text) {
