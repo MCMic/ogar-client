@@ -8,17 +8,27 @@
       canvas {
         border: 1px dashed black;
       }
+      body {
+        margin:0;
+        padding:0;
+      }
+      #leaderboard {
+        position:absolute;
+      }
+      #title {
+        text-align:center;
+      }
     </style>
   </head>
   <body>
     <div id="main">
       <h3 id="title">Ogar client</h3>
+      <div id="leaderboard">board</div>
+      <canvas id="canvas" width="800" height="200"></canvas>
+      <br/>
       <input type="text" value="ws://ogar.bernigaud.eu" id="url" name="url"/>
       <input type="text" value="ogarclient" id="nickname" name="nickname"/>
       <input type="button" onclick="javascript:connect();" value="connect"/>
-      <div id="leaderboard">board</div>
-      <br/>
-      <canvas id="canvas" width="800" height="600"></canvas>
     </div>
 
     <footer>

@@ -1,10 +1,11 @@
 var zoom = 1;
-var nodes;
-var myNodes;
+var nodes = {};
+var myNodes = [];
 var playerx,playery;
 var startx = 2000,starty = 2000;
 var mousex,mousey;
 var canvas;
+var socket = null;
 
 window.onload = function () {
   console.log('init');
@@ -13,7 +14,7 @@ window.onload = function () {
     mousex = e.clientX;
     mousey = e.clientY;
   };
-  setInterval(tick, 1000);
+  setInterval(tick, 100);
 }
 
 var Node = function(x, y, radius, name, virus) {
@@ -22,8 +23,6 @@ var Node = function(x, y, radius, name, virus) {
   this.radius = radius;
   if (name) {
     this.name = name;
-  } else {
-    this.name = "No name";
   }
   if (virus) {
     this.rgb = [0,0,0];
@@ -39,7 +38,7 @@ Node.prototype.update = function (x, y, radius) {
 }
 
 function connect() {
-  nodes = [];
+  nodes = {};
   myNodes = [];
   url = document.getElementById('url').value;
   socket = new WebSocket(url);
@@ -71,6 +70,11 @@ function connect() {
             i+=4;
             var killedId = view.getUint32(i, true);
             i+=4;
+            var n;
+            if ((n = myNodes.indexOf(killedId)) > -1) {
+              myNodes.splice(n, 1);
+            }
+            delete nodes[killedId];
           }
           var nodeId = view.getUint32(i, true);
           i+=4;
@@ -97,13 +101,13 @@ function connect() {
                     break;
                 nodeName += String.fromCharCode(c)
             }
-            var nodeId = view.getUint32(i, true);
-            i+=4;
             if (nodes[nodeId] == null) {
               nodes[nodeId] = new Node(x,y,radius,nodeName,virus);
             } else {
               nodes[nodeId].update(x,y,radius);
             }
+            var nodeId = view.getUint32(i, true);
+            i+=4;
           }
           i+=2;
           nbNodesToDestroy = view.getUint16(i, true);
@@ -111,18 +115,14 @@ function connect() {
           i+=2;
           for (var j = 0; j < nbNodesToDestroy; ++j) {
             var killedId = view.getUint32(i, true);
-            nodes[killedId] = null;
             i+=4;
-            socket.close();
+            delete nodes[killedId];
           }
           break;
       case 17: // Update position and size
-          socket.close();
-          break;
       case 20: // Clear all nodes
-          socket.close();
-          break;
       case 21: // Draw line
+          alert(packetId);
           socket.close();
           break;
       case 32: // Add node
@@ -215,6 +215,9 @@ function sendPacket(socket, packetId, data)
 }
 
 function tick() {
+  if (socket == null) {
+    return;
+  }
   drawScreen();
   sendPacket(socket, 16, [startx+mousex,starty+mousey]);
 }
@@ -227,11 +230,11 @@ function drawScreen() {
     starty = nodes[myNodes[0]].y - canvas.height/2;
   }
   for (var i in nodes) {
-    drawCircle(nodes[i].x-startx, nodes[i].y-starty, nodes[i].radius);
+    drawCircle(nodes[i].x-startx, nodes[i].y-starty, nodes[i].radius, nodes[i].name);
   }
 }
 
-function drawCircle(x, y, radius) {
+function drawCircle(x, y, radius, text) {
   // Full circle
   if (canvas.getContext) {
     var ctx = canvas.getContext("2d");
@@ -239,13 +242,22 @@ function drawCircle(x, y, radius) {
     ctx.beginPath();
     ctx.arc(x*zoom, y*zoom, radius*zoom, 0, Math.PI*2, false);
     ctx.closePath();
+    ctx.stroke();
 
-    ctx.fill();
+    if (text) {
+      ctx.font = "30px Serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(text, x, y);
+    }
   }
 }
 
 function onWindowResize ()
 {
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
+  canvas.width = window.innerWidth-20;
+  title = document.getElementById("title");
+  if(title.offsetHeight)          {titleHeight=title.offsetHeight;}
+  else if(title.style.pixelHeight){titleHeight=title.style.pixelHeight;}
+  canvas.height = window.innerHeight-titleHeight-50;
 }
