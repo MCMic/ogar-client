@@ -6,6 +6,12 @@ var startx = 2000,starty = 2000;
 var mousex,mousey;
 var canvas;
 var socket = null;
+var splitKey = 32;
+var qKey = 81;
+var wKey = 87;
+var splitKeyPressed = false;
+var qKeyPressed = false;
+var wKeyPressed = false;
 
 window.onload = function () {
   console.log('init');
@@ -14,6 +20,8 @@ window.onload = function () {
     mousex = e.clientX;
     mousey = e.clientY;
   };
+  window.onkeydown = onKeyDown;
+  window.onkeyup = onKeyUp;
   setInterval(tick, 100);
 }
 
@@ -178,6 +186,12 @@ function sendPacket(socket, packetId, data)
     case 16:
     size = 21;
     break;
+    case 17:
+    case 18:
+    case 19:
+    case 21:
+    size = 1;
+    break;
     case 254:
     case 255:
     size = 5;
@@ -204,6 +218,11 @@ function sendPacket(socket, packetId, data)
       view.setFloat64(1, data[0], true);
       view.setFloat64(9, data[1], true);
       view.setUint32(17, 0, true);
+    case 17:
+    case 18:
+    case 19:
+    case 21:
+    break;
     case 254:
       view.setUint32(1, 4, true);
     break;
@@ -251,6 +270,34 @@ function drawCircle(x, y, radius, text) {
       ctx.fillText(text, x, y);
     }
   }
+}
+
+function onKeyDown (event)
+{
+  console.log("key", event.keyCode);
+  if ((event.keyCode == splitKey) && !splitKeyPressed) {
+    splitKeyPressed = true;
+    sendPacket(socket, 17);
+  } else if ((event.keyCode == wKey) && !wKeyPressed) {
+    wKeyPressed = true;
+    sendPacket(socket, 21);
+  } else if ((event.keyCode == qKey) && !qKeyPressed) {
+    qKeyPressed = true;
+    sendPacket(socket, 18);
+  }
+}
+
+function onKeyUp (event)
+{
+  if ((event.keyCode == splitKey) && splitKeyPressed) {
+    splitKeyPressed = false;
+  } else if ((event.keyCode == wKey) && wKeyPressed) {
+    wKeyPressed = false;
+  } else if ((event.keyCode == qKey) && qKeyPressed) {
+    qKeyPressed = false;
+    sendPacket(socket, 19);
+  }
+
 }
 
 function onWindowResize ()
